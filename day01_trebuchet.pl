@@ -106,6 +106,7 @@ first_digit(Dir, First) -->
 digit(fwd, 0) --> "zero".
 digit(fwd, 1) --> "one".
 digit(fwd, 2) --> "two".
+digit(fwd, 3) --> "three".
 digit(fwd, 4) --> "four".
 digit(fwd, 5) --> "five".
 digit(fwd, 6) --> "six".
@@ -172,6 +173,27 @@ test(calibration_value, V == 14) :-
     calibration_value("zoneight234", V).
 test(calibration_value, V == 76) :-
     calibration_value("7pqrstsixteen", V).
+
+test(reverse, V == 00) :-
+    calibration_value("zero", V).
+test(reverse, V == 11) :-
+    calibration_value("one", V).
+test(reverse, V == 22) :-
+    calibration_value("two", V).
+test(reverse, V == 33) :-
+    calibration_value("three", V).
+test(reverse, V == 44) :-
+    calibration_value("four", V).
+test(reverse, V == 55) :-
+    calibration_value("five", V).
+test(reverse, V == 66) :-
+    calibration_value("six", V).
+test(reverse, V == 77) :-
+    calibration_value("seven", V).
+test(reverse, V == 88) :-
+    calibration_value("eight", V).
+test(reverse, V == 99) :-
+    calibration_value("nine", V).
 
 test(solve, Sum == 142) :-
     open_string("1abc2
