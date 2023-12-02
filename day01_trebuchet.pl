@@ -123,30 +123,33 @@ digit(rev, 6) --> "xis".
 digit(rev, 7) --> "neves".
 digit(rev, 8) --> "thgie".
 digit(rev, 9) --> "enin".
-digit(_, V) -->
-    [C],
-    { C >= 0'0, C =< 0'9 },
-    { V is C - 0'0 }. % ' - make highlighting happy
+digit(_, 0) --> "0".
+digit(_, 1) --> "1".
+digit(_, 2) --> "2".
+digit(_, 3) --> "3".
+digit(_, 4) --> "4".
+digit(_, 5) --> "5".
+digit(_, 6) --> "6".
+digit(_, 7) --> "7".
+digit(_, 8) --> "8".
+digit(_, 9) --> "9".
 
 skip_rest --> [].
 skip_rest --> [_], skip_rest.
 
 read_file_to_lines(Path, Lines) :-
     setup_call_cleanup(open(Path, read, Stream),
-                       read_stream_to_lines(Stream, Lines),
+                       ( read_stream_to_lines(Stream, Lines0),
+                         exclude(=(""), Lines0, Lines) ),
                        close(Stream)).
 
 read_stream_to_lines(Stream, Lines) :-
-    read_stream_to_lines_(Stream, Lines0),
-    exclude(=(""), Lines0, Lines).
-
-read_stream_to_lines_(Stream, Lines) :-
     read_line_to_string(Stream, Line),
-    (   Line == end_of_file
-    ->  Lines = []
-    ;   Lines = [Line|Lines2],
-        read_stream_to_lines_(Stream, Lines2)
-    ).
+    read_stream_to_lines(Stream, Line, Lines).
+
+read_stream_to_lines(_, end_of_file, []) :- !.
+read_stream_to_lines(Stream, Line, [Line|Lines2]) :-
+    read_stream_to_lines(Stream, Lines2).
 
 :- begin_tests(day1).
 
