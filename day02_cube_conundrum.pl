@@ -65,9 +65,19 @@ is the sum of the IDs of those games?
 :- use_module(library(dcg/basics)).
 :- use_module(library(dcg/high_order)).
 
-solve(_) :- fail.
+game_cubes(game{red:12, green:13, blue:14}).
 
-possible_game(Game, Grabs) :-
+solve(Sum) :-
+    read_file_to_lines('data/day02_cube_conundrum.data', Lines),
+    game_cubes(Game),
+    solve(Game, Lines, Sum).
+
+solve(Game, Lines, Sum) :-
+    maplist(parse_game, Lines, Games),
+    convlist(possible_game(Game), Games, PossibleGameIds),
+    sum_list(PossibleGameIds, Sum).
+
+possible_game(Game, GameId-Grabs, GameId) :-
     maplist(possible_grab(Game), Grabs).
 
 possible_grab(Game, Grab) :-
@@ -75,17 +85,17 @@ possible_grab(Game, Grab) :-
     maplist(possible_grab_pair(Game), GrabPairs).
 
 possible_grab_pair(Game, Color-Number) :-
-    get_dict(Color, Game, GameNumber),
-    GameNumber >= Number.
+    get_dict(Color, Game, GameColorNumber),
+    GameColorNumber >= Number.
 
-parse_game(Line, GameNumber, Grabs) :-
+parse_game(Line, GameId-Grabs) :-
     string_codes(Line, Codes),
-    phrase(parse_game(GameNumber, Grabs), Codes).
+    phrase(parse_game(GameId, Grabs), Codes).
 
-parse_game(GameNumber, Grabs) -->
+parse_game(GameId, Grabs) -->
     whites,
     "Game", whites,
-    integer(GameNumber),
+    integer(GameId),
     ":", whites,
     sequence(grab, semicolon, Grabs).
 
@@ -105,33 +115,56 @@ color(red) --> "red".
 color(green) --> "green".
 color(blue) --> "blue".
 
+read_file_to_lines(Path, Lines) :-
+    setup_call_cleanup(open(Path, read, Stream),
+                       ( read_stream_to_lines(Stream, Lines0),
+                         exclude(=(""), Lines0, Lines) ),
+                       close(Stream)).
+
+read_stream_to_lines(Stream, Lines) :-
+    read_line_to_string(Stream, Line),
+    read_stream_to_lines(Stream, Line, Lines).
+
+read_stream_to_lines(_, end_of_file, []) :- !.
+read_stream_to_lines(Stream, Line, [Line|Lines2]) :-
+    read_stream_to_lines(Stream, Lines2).
+
 :- begin_tests(day2).
 
+test(parse, G == 1) :-
+    parse_game("Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green", GV),
+    assertion(GV == 1-[grab{blue:3, red:4}, grab{red:1, green:2, blue:6}, grab{green:2}]),
+    game_cubes(Game),
+    possible_game(Game, GV, G).
+test(parse, G == 2) :-
+    parse_game("Game 2: 1 blue, 2 green; 3 green, 4 blue, 1 red; 1 green, 1 blue", GV),
+    assertion(GV == 2-[grab{blue:1, green:2}, grab{green:3, blue:4, red:1}, grab{green:1, blue:1}]),
+    game_cubes(Game),
+    possible_game(Game, GV, G).
 test(parse) :-
-    parse_game("Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green", G, V),
-    assertion(G == 1),
-    assertion(V == [grab{blue:3, red:4}, grab{red:1, green:2, blue:6}, grab{green:2}]),
-    assertion(possible_game(game{red:12, green:13, blue:14}, V)).
+    parse_game("Game 3: 8 green, 6 blue, 20 red; 5 blue, 4 red, 13 green; 5 green, 1 red", GV),
+    assertion(GV == 3-[grab{green:8, blue:6, red:20}, grab{blue:5, red:4, green:13}, grab{green:5, red:1}]),
+    game_cubes(Game),
+    assertion(\+ possible_game(Game, GV, _)).
 test(parse) :-
-    parse_game("Game 2: 1 blue, 2 green; 3 green, 4 blue, 1 red; 1 green, 1 blue", G, V),
-    assertion(G == 2),
-    assertion(V == [grab{blue:1, green:2}, grab{green:3, blue:4, red:1}, grab{green:1, blue:1}]),
-    assertion(possible_game(game{red:12, green:13, blue:14}, V)).
-test(parse) :-
-    parse_game("Game 3: 8 green, 6 blue, 20 red; 5 blue, 4 red, 13 green; 5 green, 1 red", G, V),
-    assertion(G == 3),
-    assertion(V == [grab{green:8, blue:6, red:20}, grab{blue:5, red:4, green:13}, grab{green:5, red:1}]),
-    assertion(\+ possible_game(game{red:12, green:13, blue:14}, V)).
-test(parse) :-
-    parse_game("Game 4: 1 green, 3 red, 6 blue; 3 green, 6 red; 3 green, 15 blue, 14 red", G, V),
-    assertion(G == 4),
-    assertion(V == [grab{green:1, red:3, blue:6}, grab{green:3, red:6}, grab{green:3, blue:15, red:14}]),
-    assertion(\+ possible_game(game{red:12, green:13, blue:14}, V)).
-test(parse) :-
-    parse_game("Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green", G, V),
-    assertion(G == 5),
-    assertion(V == [grab{red:6, blue:1, green:3}, grab{blue:2, red:1, green:2}]),
-    assertion(possible_game(game{red:12, green:13, blue:14}, V)).
+    parse_game("Game 4: 1 green, 3 red, 6 blue; 3 green, 6 red; 3 green, 15 blue, 14 red", GV),
+    assertion(GV == 4-[grab{green:1, red:3, blue:6}, grab{green:3, red:6}, grab{green:3, blue:15, red:14}]),
+    game_cubes(Game),
+    assertion(\+ possible_game(Game, GV, _)).
+test(parse, G == 5) :-
+    parse_game("Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green", GV),
+    assertion(GV == 5-[grab{red:6, blue:1, green:3}, grab{blue:2, red:1, green:2}]),
+    game_cubes(Game),
+    possible_game(Game, GV, G).
 
+test(solve, Sum == 8) :-
+    open_string("Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green
+Game 2: 1 blue, 2 green; 3 green, 4 blue, 1 red; 1 green, 1 blue
+Game 3: 8 green, 6 blue, 20 red; 5 blue, 4 red, 13 green; 5 green, 1 red
+Game 4: 1 green, 3 red, 6 blue; 3 green, 6 red; 3 green, 15 blue, 14 red
+Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green
+", Stream),
+    read_stream_to_lines(Stream, Lines),
+    solve(game{red:12, green:13, blue:14}, Lines, Sum).
 
 :- end_tests(day2).
